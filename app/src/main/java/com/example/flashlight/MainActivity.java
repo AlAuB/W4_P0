@@ -1,6 +1,7 @@
 package com.example.flashlight;
 
 import static android.hardware.Camera.Parameters.FLASH_MODE_AUTO;
+import static android.hardware.Camera.Parameters.FLASH_MODE_OFF;
 import static android.hardware.Camera.Parameters.FLASH_MODE_ON;
 import static android.hardware.Camera.Parameters.FLASH_MODE_TORCH;
 
@@ -33,8 +34,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
     boolean hasFlash;
     Camera camera;
     GestureDetectorCompat gestureDetectorCompat;
-    private final int swipeThreshold = 100;
-    private final int swipeVelocityThreshold = 100;
+    final int swipeThreshold = 100;
+    final int swipeVelocityThreshold = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +50,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1);
         }
         hasFlash = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+
+        camera = Camera.open();
+        Camera.Parameters p = camera.getParameters();
+        if (p.getFlashMode().equals(FLASH_MODE_ON)) {
+            turnOn();
+        }
 
         toggle.setOnCheckedChangeListener((compoundButton, b) -> {
             if (hasFlash) {
@@ -87,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
     }
 
     private void turnOn() {
-        camera = Camera.open();
         Camera.Parameters p = camera.getParameters();
         p.setFlashMode(getFlashOnParameter());
         camera.setParameters(p);
@@ -95,8 +101,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         try {
             camera.setPreviewTexture(preview);
             camera.startPreview();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
+
         }
     }
 
