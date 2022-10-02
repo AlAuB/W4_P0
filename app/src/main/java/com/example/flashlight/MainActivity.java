@@ -51,10 +51,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         }
         hasFlash = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
 
-        camera = Camera.open();
-        Camera.Parameters p = camera.getParameters();
-        if (hasFlash && p.getFlashMode().equals(FLASH_MODE_ON)) {
-            turnOn();
+        if (hasFlash) {
+            camera = Camera.open();
+            Camera.Parameters p = camera.getParameters();
+            if (p.getFlashMode().equals(FLASH_MODE_ON)) {
+                toggle.setChecked(true);
+            }
         }
 
         toggle.setOnCheckedChangeListener((compoundButton, b) -> {
