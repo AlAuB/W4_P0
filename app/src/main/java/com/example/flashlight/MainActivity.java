@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
 
         camera = Camera.open();
         Camera.Parameters p = camera.getParameters();
-        if (p.getFlashMode().equals(FLASH_MODE_ON)) {
+        if (hasFlash && p.getFlashMode().equals(FLASH_MODE_ON)) {
             turnOn();
         }
 
