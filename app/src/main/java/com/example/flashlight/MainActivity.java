@@ -138,6 +138,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
             } catch (Exception ignored) {
             }
         } else {
+            camera = Camera.open();
             camera.stopPreview();
             camera.release();
         }
