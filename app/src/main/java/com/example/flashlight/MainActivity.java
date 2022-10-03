@@ -1,7 +1,6 @@
 package com.example.flashlight;
 
 import static android.hardware.Camera.Parameters.FLASH_MODE_AUTO;
-import static android.hardware.Camera.Parameters.FLASH_MODE_OFF;
 import static android.hardware.Camera.Parameters.FLASH_MODE_ON;
 import static android.hardware.Camera.Parameters.FLASH_MODE_TORCH;
 
@@ -10,13 +9,16 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
     Context context;
     boolean hasFlash;
     Camera camera;
+    boolean startUp;
+    CameraManager cameraManager;
     GestureDetectorCompat gestureDetectorCompat;
     final int swipeThreshold = 100;
     final int swipeVelocityThreshold = 100;
@@ -44,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         toggle = findViewById(R.id.toggle);
         input = findViewById(R.id.input);
         context = getApplicationContext();
+        startUp = true;
         gestureDetectorCompat = new GestureDetectorCompat(this, this);
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_DENIED) {
@@ -52,18 +57,26 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         hasFlash = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
 
         if (hasFlash) {
-            camera = Camera.open();
-            Camera.Parameters p = camera.getParameters();
-            if (p.getFlashMode().equals(FLASH_MODE_ON)) {
-                toggle.setChecked(true);
+            Handler handler = new Handler(getMainLooper());
+            cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                CameraManager.TorchCallback torchCallback = new CameraManager.TorchCallback() {
+                    @Override
+                    public void onTorchModeChanged(@NonNull String cameraId, boolean enabled) {
+                        super.onTorchModeChanged(cameraId, enabled);
+                        toggle.setChecked(enabled);
+                        startUp = false;
+                    }
+                };
+                cameraManager.registerTorchCallback(torchCallback, handler);
             }
         }
 
         toggle.setOnCheckedChangeListener((compoundButton, b) -> {
             if (hasFlash) {
-                if (b) {
+                if (b && !startUp) {
                     turnOn();
-                } else {
+                } else if (!b && !startUp) {
                     turnOff();
                 }
             } else {
@@ -96,21 +109,38 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
     }
 
     private void turnOn() {
-        Camera.Parameters p = camera.getParameters();
-        p.setFlashMode(getFlashOnParameter());
-        camera.setParameters(p);
-        SurfaceTexture preview = new SurfaceTexture(0);
-        try {
-            camera.setPreviewTexture(preview);
-            camera.startPreview();
-        } catch (IOException ignored) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            try {
+                String cameraId = cameraManager.getCameraIdList()[0];
+                cameraManager.setTorchMode(cameraId, true);
+            } catch (Exception ignored) {
+            }
+        } else {
+            camera = Camera.open();
+            Camera.Parameters p = camera.getParameters();
+            p.setFlashMode(getFlashOnParameter());
+            camera.setParameters(p);
+            SurfaceTexture preview = new SurfaceTexture(0);
+            try {
+                camera.setPreviewTexture(preview);
+                camera.startPreview();
+            } catch (IOException ignored) {
 
+            }
         }
     }
 
     private void turnOff() {
-        camera.stopPreview();
-        camera.release();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            try {
+                String cameraId = cameraManager.getCameraIdList()[0];
+                cameraManager.setTorchMode(cameraId, false);
+            } catch (Exception ignored) {
+            }
+        } else {
+            camera.stopPreview();
+            camera.release();
+        }
     }
 
     @Override
