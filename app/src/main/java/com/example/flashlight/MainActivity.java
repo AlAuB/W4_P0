@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     turnOff();
                 }
             } else {
-                Toast.makeText(this, "No Flashlight for this device", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "This device does NOT have a flashlight", Toast.LENGTH_LONG).show();
             }
         });
 
